@@ -13,7 +13,7 @@ import iglo._networks.network_conv_grey as ncg
 import iglo._networks.network_toy as nt
 from os.path import join
 
-class  Glomap():
+class  iGLoMAP():
     def __init__(self,
                  n_neighbors = 5,
                  d_thresh = 10,
@@ -33,7 +33,7 @@ class  Glomap():
                  clamp=4,
                  device="cuda",
                  lr_Q = 0.01,
-                 conv=True,
+                 conv=False,
                  Q = None):
 
         ''' ARGUMENTS:
@@ -64,7 +64,7 @@ class  Glomap():
         self.conv= conv
         self.Q = Q
 
-    def _fit_prepare(self, X,Y, precalc_graph=None,network_init = True, save_shortest_path = True):
+    def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = True):
         if precalc_graph is None:
             g_dist = iglo_graph(X, self.n_neighbors)
             if save_shortest_path:
@@ -126,8 +126,8 @@ class  Glomap():
 
         self.nu = torch.tensor(self.sparse_P.todense())
 
-    def fit_transform(self, X, Y=None,precalc_graph=None, network_init=True, eval=True):
-        self._fit_prepare(X, Y, precalc_graph, network_init)
+    def fit_transform(self, X, Y=None,precalc_graph=None, eval=True):
+        self._fit_prepare(X, Y, precalc_graph)
         print("The learning is prepared")
         
         print("The particle algorithm")

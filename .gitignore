@@ -15,3 +15,7 @@ runs
 **/.ipynb_checkpoints/
 **/*.out
 **/__pycache__/
+
+
+iglo.egg-info/
+numerical_analysis/
