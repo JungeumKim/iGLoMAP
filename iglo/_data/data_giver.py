@@ -115,7 +115,7 @@ def get_dataset(dataset, n, train=True, ignore_y =False, n_pca=6000, extra_col=F
         d=101, r=5, r_out=25, var=1.0, seed=seed, plot=False)
 
 
-    elif dataset == "sparse_egg12":
+    elif dataset == "eggs":
         n_unif, n_hsph = egg_split(_min = -4, _max = 4, n=n, r=1, eggs=12 ,square = False, alpha=0.3)
         X, Y = get_12_egg(n_unif=n_unif, n_egg=n_hsph, seed = seed)
 

@@ -37,50 +37,6 @@ def unif_hole(n, _min=-4, _max=4, dim=3, z_val = 0, centers = [(0,0)], r=1, squa
 
 
     
-def get_one_egg(n_unif=1000, n_egg=1000,_min = -4,_max = 4, dim=3, centers=[(0,0)],r =1, z_val = 0, 
-                color=True, seed = 1,square=True):
-    np.random.seed(seed+10)
-    vec = sample_spherical(n_egg, dim, r)
-    data = unif_hole(n_unif, _min,_max, dim, z_val, centers, r,square=square)
-    for x_c, y_c in centers:
-        data2 = np.vstack([data.transpose(), (vec+ np.array([x_c,y_c,z_val]).reshape(3,-1)).transpose()]).transpose()
-    #data = data.transpose()
-    if color: 
-        color= data2[2]
-        return data2, color
-    else: 
-        return data2
-    
-def get_s_egg(n_unif=1000, n_egg=1000, color = True, _min = -4,_max = 4, dim=3, seed=1,extra_col=False): 
-
-    
-    data, col = get_one_egg(n_unif, n_egg, _min,_max,dim, seed = seed, square=False)
-    
-    np.random.seed(seed)
-    
-    t = data[0]/(_max*4-_min*4)*(3 * np.pi )
-    x = np.sin(t)
-    y = data[1]
-    z = np.sign(t) * (np.cos(t) - 1) + data[2]
-
-    X = np.stack((x, y,z))
-
-    #if noise: 
-    #generator = np.random.RandomState(1)
-    #n_samples=100
-    #X += noise * generator.randn(3, n_samples)
-    #X = X.T
-    if color: 
-        color = np.squeeze(t)
-        if extra_col:
-            #return X, np.stack([color, col]).transpose()
-            return X, col
-        else:
-            return X, color#, col
-    return X
-    
-    
-    
 def get_12_egg(n_unif=1000, n_egg=1000,_min = -4,_max = 4, dim=3,r =1, z_val = 0, color=True, seed = 1): 
     
     np.random.seed(seed+10)
@@ -96,33 +52,3 @@ def get_12_egg(n_unif=1000, n_egg=1000,_min = -4,_max = 4, dim=3,r =1, z_val = 0
         return data, color
     else: 
         return data
-    
-def get_12s_egg(n_unif=1000, n_egg=1000, color = True, _min = -4,_max = 4, dim=3, seed=1,extra_col=False): 
-
-    
-    
-    data, col = get_12_egg(n_unif, n_egg, _min,_max,dim, seed = seed)
-    
-    np.random.seed(seed)
-    
-    t = data[0]/(_max*4-_min*4)*(3 * np.pi )
-    x = np.sin(t)
-    y = data[1]
-    z = np.sign(t) * (np.cos(t) - 1) + data[2]
-
-    X = np.stack((x, y,z))
-
-    #if noise: 
-    #generator = np.random.RandomState(1)
-    #n_samples=100
-    #X += noise * generator.randn(3, n_samples)
-    #X = X.T
-    if color: 
-        color = np.squeeze(t)
-        if extra_col:
-            #return X, np.stack([color, col]).transpose()
-            return X, col
-        else:
-            return X, color#, col
-    return X
-    
