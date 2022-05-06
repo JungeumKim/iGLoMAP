@@ -1,10 +1,11 @@
 from IPython.core.debugger import set_trace
 import torch 
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-from scipy.sparse import csr_matrix,coo_matrix
-from scipy.optimize import curve_fit
+from scipy.sparse import coo_matrix
+
+from sklearn.neighbors import NearestNeighbors
+from scipy.sparse.csgraph import shortest_path
+
 
 def rand_seed(seed=1):
     torch.manual_seed(seed)
@@ -110,4 +111,15 @@ def random_nb_sparse(P, idx):
         chosen_col = np.random.choice(P.shape[0], 1).item()
 
     return chosen_col
+
+
+def iglo_graph(X, n_neighbors):
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(X)
+    knn_dists, knn_indices = nbrs.kneighbors(X)  # the first column is with the point itself.
+    sigmas = knn_dists.sum(axis=1) / (n_neighbors - 1)
+    rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1, True)
+    shortest_D = shortest_path(rescaled_knn_dists_mat, directed=False,
+                                      return_predecessors=False)
+
+    return shortest_D
 

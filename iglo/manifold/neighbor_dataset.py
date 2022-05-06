@@ -2,9 +2,6 @@ import torch
 from torch.utils.data import Dataset
 from IPython.core.debugger import set_trace
 
-
-
-
 ''' Usage: 
 Need: data X
 
