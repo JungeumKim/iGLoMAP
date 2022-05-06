@@ -1,0 +1,17 @@
+annals
+models
+runs
+
+#*
+#!.gitignore
+#!sourceCode/
+#!sourceCode/**
+
+#!sourceCode/**/*.py
+#!sourceCode/**/**.py
+#!sourceCode/*/*/**.py
+
+**/_trash/
+**/.ipynb_checkpoints/
+**/*.out
+**/__pycache__/
