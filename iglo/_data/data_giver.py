@@ -50,9 +50,11 @@ def shortest_path_savior(dataset, N_train, max_=True, n_neighbors = 5,
     # Data handling
     X,Y = get_dataset(dataset, N_train,ignore_y =False)
     #set_trace()
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(X)
+    ## Here, n_neighbors = 6 means n_neighbors = 5 because the sklearn KNN includes the neighbor with the point itself.
+    # So we need to subtract by 1 manualy when using this code.
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors+1).fit(X)
     knn_dists, knn_indices = nbrs.kneighbors(X)  # the first column is with the point itself.
-    sigmas = knn_dists.sum(axis=1) / (n_neighbors - 1)
+    sigmas = knn_dists.sum(axis=1) / (n_neighbors)
     rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1)
     shortest_D, Press = shortest_path(rescaled_knn_dists_mat, directed=False,
                                return_predecessors=True)
