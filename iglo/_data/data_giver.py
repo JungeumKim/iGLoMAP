@@ -53,7 +53,7 @@ def shortest_path_savior(dataset, N_train, max_=True, n_neighbors = 5,
     nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(X)
     knn_dists, knn_indices = nbrs.kneighbors(X)  # the first column is with the point itself.
     sigmas = knn_dists.sum(axis=1) / (n_neighbors - 1)
-    rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1, True)
+    rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1)
     shortest_D, Press = shortest_path(rescaled_knn_dists_mat, directed=False,
                                return_predecessors=True)
     #Saving

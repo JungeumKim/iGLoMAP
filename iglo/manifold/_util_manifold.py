@@ -30,11 +30,7 @@ def torch_pairwise_distances(X, dim =3,grad_stop=False,reduction="norm"):
 
 #modified from umap
 def compute_rescaled_dist(
-        knn_indices, knn_dists, sigmas, dist_scale=1.0, fmax=True):
-    if fmax:
-        print("JK_local_construction_begin with fmax")
-    else:
-        print("JK_local_construction_begin with min")
+        knn_indices, knn_dists, sigmas, dist_scale=1.0):
     n_samples = knn_indices.shape[0]
     n_neighbors = knn_indices.shape[1]
     rows = np.zeros(knn_indices.size, dtype=np.int32)
@@ -48,11 +44,7 @@ def compute_rescaled_dist(
 
             rows[i * n_neighbors + j] = i
             cols[i * n_neighbors + j] = knn_indices[i, j]
-            if fmax:
-                dists[i * n_neighbors + j] = knn_dists[i, j] / min(sigmas[i], sigmas[knn_indices[i, j]]) # f_max version
-            else:
-                dists[i * n_neighbors + j] = knn_dists[i, j] / max(sigmas[i], sigmas[knn_indices[i, j]]) # min version
-            # dists[i * n_neighbors + j] = knn_dists[i, j]/sigmas[i]
+            dists[i * n_neighbors + j] = knn_dists[i, j] / min(sigmas[i], sigmas[knn_indices[i, j]]) # f_max version
     print("rescale KNN_JK")
     dists *=  dist_scale
     dmat = coo_matrix((dists, (rows, cols)), shape=(n_samples,n_samples))
@@ -117,7 +109,7 @@ def iglo_graph(X, n_neighbors):
     nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(X)
     knn_dists, knn_indices = nbrs.kneighbors(X)  # the first column is with the point itself.
     sigmas = knn_dists.sum(axis=1) / (n_neighbors - 1)
-    rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1, True)
+    rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1)
     shortest_D = shortest_path(rescaled_knn_dists_mat, directed=False,
                                       return_predecessors=False)
 
