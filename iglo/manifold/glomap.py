@@ -20,7 +20,7 @@ class  iGLoMAP():
                  ee = 0.1,
                  a = 1.57694,
                  b = 0.8951,
-                 initial_lr = 1,
+                 initial_lr = 0.1,
                  end_lr = 0,
                  batch_size = 100,
                  z_dim=2,
@@ -34,8 +34,7 @@ class  iGLoMAP():
                  device="cuda",
                  lr_Q = 0.01,
                  conv=False,
-                 Q = None,
-                 lr_decay = 0.99):
+                 Q = None):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -64,7 +63,6 @@ class  iGLoMAP():
         self.lr_Q = lr_Q
         self.conv= conv
         self.Q = Q
-        self.lr_decay = lr_decay
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = True):
         if precalc_graph is None:
@@ -112,7 +110,7 @@ class  iGLoMAP():
                                layer_factor=16)
                 else:
                     Q = nt.Q_2dim(device=self.device, leaky=0.01, z_dim=self.z_dim,
-                              dim=X.shape[1], factor=20)#128)
+                              dim=X.shape[1], factor=128)
                     
             else:
                 Q = self.Q
@@ -222,7 +220,7 @@ class  iGLoMAP():
 
     def _fit_particle(self):
         optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=self.lr_decay)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
             #early = (epochs < self.EPOCHS*0.3)
