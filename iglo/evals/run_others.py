@@ -15,9 +15,8 @@ def parse_args():
 
     #new arguments:
     parser.add_argument('--method', default ="umap", help="[umap, pacmap, isomap, tsne,phate]")
-    parser.add_argument('--dataset', default ="spheres", help = '["spheres","sparse_egg12", "mammoth","mnist_np", "coil20","hier"]')
+    parser.add_argument('--dataset', default ="spheres", help = '["spheres","eggs", "scurve","hier"]')
     parser.add_argument('--N', type=int, default=1000)
-    parser.add_argument('--PP', type=int, default=15)
     parser.add_argument('--z_dir', default="/home/kim2712/Desktop/research/encodingGAN/_data_cache/baselines")
     parser.add_argument('--n_neighbor', default=None)
 
@@ -81,26 +80,6 @@ def main(args):
         np.save(file, y, allow_pickle=True)
     print(F"embedding of {args.method} saved at {path}")
     
-    
-    if (args.dataset in ["mnist", "kmnist", "fmnist", "cifar", "coil20"]) or ("np" in args.dataset) or ("pca" in args.dataset):
-        local=True
-        knn_n_neighbors=[1, 3, 5, 10, 15, 20, 25, 30]
-        
-    elif ("hier" in args.dataset) or (args.dataset == "spheres"):
-        local=True
-        knn_n_neighbors=[10, 30, 50, 100, 150, 200, 250, 300]
-        
-    elif (args.dataset in ["scurve", "severe", "sparse_egg12"]):
-        local=False
-        knn_n_neighbors=None
-    
-    for dist in ["L2", "global", "rescaled_global"]: 
-        calc = MeasureCalculator(k_max=200, X=x, Z=z,Y=y, distance=dist, local=local, knn_n_neighbors=knn_n_neighbors, dataset = args.dataset,
-                                PP = args.PP)
-        result = calc.run(single=False)
-        torch.save(result, os.path.join(path, "eval_" + dist))
-        print("saved at"+ os.path.join(path,  "eval_" + dist))
-        
 
             
 if __name__ == '__main__':
