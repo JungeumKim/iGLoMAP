@@ -1,12 +1,12 @@
 from __future__ import print_function
 import argparse
 import numpy as np
-from encodingGAN._data.data_giver import get_dataset
+from iglo._data.data_giver import get_dataset
 import os
 import pathlib
 from IPython.core.debugger import set_trace
 import torch
-from encodingGAN.evals.evaluator import MeasureCalculator
+from iglo.evals.evaluator import MeasureCalculator
 #worktree: enc_44d9b36
 
 def parse_args():
