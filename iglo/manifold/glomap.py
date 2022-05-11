@@ -20,7 +20,7 @@ class  iGLoMAP():
                  ee = 0.1,
                  a = 1.57694,
                  b = 0.8951,
-                 initial_lr = 0.1,
+                 initial_lr = 1,
                  end_lr = 0,
                  batch_size = 100,
                  z_dim=2,
@@ -153,7 +153,9 @@ class  iGLoMAP():
         Z = torch.cat(Z0)
         return Z
 
-    def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None):
+    def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None, show=True):
+        if isinstance(X,np.ndarray):
+            X = torch.tensor(X).float()
         Z0 = self.get_Z(X).numpy()
         if plot:
             color = Y
@@ -165,13 +167,14 @@ class  iGLoMAP():
             if color is None:
                 axis.scatter(Z0[:, 0], Z0[:, 1], s=s)
             else:
-                axis.scatter(Z0[:, 0], Z0[:, 1], c=color, cmap=plt.cm.gist_rainbow, s=s)
+                axis.scatter(Z0[:, 0], Z0[:, 1], c=color, cmap=plt.cm.Spectral, s=s)
             axis.set_aspect('equal')
             axis.set_title(title)
             if path is not None:
                 fig.savefig(path)
-            plt.show()
-            plt.close()
+            if show:
+                plt.show()
+                plt.close()
 
         return Z0
 
