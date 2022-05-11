@@ -139,6 +139,44 @@ class  iGLoMAP():
             print("eval for knns:",self.eval_result)
 
         return self.Z
+
+    def get_Z(self,X):
+        Z0 = []
+        with torch.no_grad():
+            for i in range(int(X.shape[0] / self.batch_size)):
+                z = self.Q(X[i * self.batch_size: (i + 1) * self.batch_size].to(self.device))
+                Z0.append(z.cpu())
+            if (X.shape[0] % self.batch_size) > 0:
+                i = i + 1
+                z = self.Q(X[i * self.batch_size:].to(self.device))
+                Z0.append(z.cpu())
+        Z = torch.cat(Z0)
+        return Z
+
+    def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None):
+        Z0 = self.get_Z(X).numpy()
+        color = Y
+        if plot:
+            if axis is None:
+                fig = plt.figure(figsize=(8, 8))
+                axis = fig.add_subplot(111)
+            else:
+                assert path is None, "when axis is given, we cannot save it."
+            if color is None:
+                axis.scatter(Z0[:, 0], Z0[:, 1], s=s)
+            else:
+                axis.scatter(Z0[:, 0], Z0[:, 1], c=color, cmap=plt.cm.gist_rainbow, s=s)
+            axis.set_aspect('equal')
+            axis.set_title(title)
+            if path is not None:
+                fig.savefig(path)
+            plt.show()
+            plt.close()
+
+        return Z0
+
+
+
     def vis(self,Y=None,axis=None, s=1, show=False,title=None,path=None,rainbow=False):
 
         if Y is not None:
@@ -156,16 +194,7 @@ class  iGLoMAP():
             axis = fig.add_subplot(111)
 
         if True:
-            Z0 = []
-            with torch.no_grad():
-                for i in range(int(self.X.shape[0]/self.batch_size)):
-                    z = self.Q(self.X[i*self.batch_size: (i+1)*self.batch_size].to(self.device))
-                    Z0.append(z.cpu())
-                if (self.X.shape[0]%self.batch_size)>0:
-                    i=i+1
-                    z = self.Q(self.X[i*self.batch_size: ].to(self.device))
-                    Z0.append(z.cpu())
-            self.Z = torch.cat(Z0)
+            self.Z = self.get_Z(self.X)
             Z0 = self.Z.numpy()
 
 
