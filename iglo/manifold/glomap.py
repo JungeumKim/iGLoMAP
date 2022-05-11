@@ -155,8 +155,8 @@ class  iGLoMAP():
 
     def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None):
         Z0 = self.get_Z(X).numpy()
-        color = Y
         if plot:
+            color = Y
             if axis is None:
                 fig = plt.figure(figsize=(8, 8))
                 axis = fig.add_subplot(111)
