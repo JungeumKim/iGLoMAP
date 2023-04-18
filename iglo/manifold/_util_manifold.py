@@ -108,7 +108,9 @@ def random_nb_sparse(P, idx):
 def iglo_graph(X, n_neighbors):
     nbrs = NearestNeighbors(n_neighbors=n_neighbors+1).fit(X)
     knn_dists, knn_indices = nbrs.kneighbors(X)  # the first column is with the point itself.
-    sigmas = knn_dists.sum(axis=1) / (n_neighbors)
+    #sigmas = knn_dists.sum(axis=1) / (n_neighbors)
+    sigmas = np.sqrt(np.power(knn_dists,2).sum(axis=1) / (n_neighbors))
+    print(F"DTM r=2, empirical version used, data size: n={sigmas.shape[0]}.")
     rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1)
     shortest_D = shortest_path(rescaled_knn_dists_mat, directed=False,
                                       return_predecessors=False)
