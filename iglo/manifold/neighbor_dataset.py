@@ -100,3 +100,7 @@ class Neighbor_dataset_f(Dataset):
                 return *self.dataset[idx], idx, *self.dataset[nb_idx], nb_idx
             else:
                 return *self.dataset[idx], *self.dataset[nb_idx]
+
+
+
+
