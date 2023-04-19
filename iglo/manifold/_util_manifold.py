@@ -84,6 +84,12 @@ def compute_nu(knn_indices, knn_dists, sigmas, dist_scale=1.0, offset=False):
 
 
 def random_nb_sparse(P, idx):
+    '''
+
+    :return:
+        chosen_col: a randomly chosen (connected) neighbor of idx
+        nb: all (connected) neighbors of idx
+    '''
     # number of neighbors = number of non-zero columns of idx row
     n_nb = P.indptr[idx + 1] - P.indptr[idx]
 
@@ -95,14 +101,14 @@ def random_nb_sparse(P, idx):
     # normalization within n_nb probs.
     summ=n_P_transition.sum()
     if summ>0:
-        n_P_transition /= n_P_transition.sum()
+        n_P_transition2 = n_P_transition/n_P_transition.sum()
     # random selection
-        chosen_ptr = np.random.choice(n_nb, 1, p=n_P_transition).item()
+        chosen_ptr = np.random.choice(n_nb, 1, p=n_P_transition2).item()
         chosen_col = nb[chosen_ptr]
     else:
         chosen_col = np.random.choice(P.shape[0], 1).item()
 
-    return chosen_col
+    return chosen_col, nb, n_P_transition
 
 
 def iglo_graph(X, n_neighbors):
