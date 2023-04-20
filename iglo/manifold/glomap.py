@@ -97,17 +97,10 @@ class  iGLoMAP():
         indx_dataset_g = Neighbor_dataset(indices,
                                    neighbor_rule=random_idx_generator,
                                    return_idx=True)
-        def my_collate(batch):
-            set_trace()
-            data = [item[0] for item in batch]
-            target = [item[1] for item in batch]
-            target = torch.LongTensor(target)
-            return [data, target]
 
         self.g_loader = DataLoader(indx_dataset_g,
                               batch_size=self.batch_size,
                               shuffle=True,
-                              collate_fn=my_collate,
                               num_workers=2)
 
         if True:
