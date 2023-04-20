@@ -216,8 +216,7 @@ class  iGLoMAP():
             plt.show()
         plt.close()
 
-    def manual_single_negative_grad(self,z_h,a,b,neighbors_of_h, mu_ij_of_neighbors_of_h):
-        set_trace()
+    def manual_single_negative_grad(self,z_h,a,b,):
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
         deno = (0.001 + z_dist_square) * (a * z_dist_square.pow(b) + 1)
 
@@ -228,9 +227,9 @@ class  iGLoMAP():
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
         return neg_step
-    def manual_single_update(self, z_h, z_t, idx_h,alpha,neighbors_of_h, mu_ij_of_neighbors_of_h):
+    def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
-        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b,neighbors_of_h, mu_ij_of_neighbors_of_h)
+        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b)
         neg_step = neg_grad.sum(dim=1)
 
         updated_z_h = z_h + alpha * self.learning_ee * neg_step
@@ -259,12 +258,13 @@ class  iGLoMAP():
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
 
-                idx_h_dum, idx_h, idx_t_dum, idx_t,neighbors_of_h, mu_ij_of_neighbors_of_h = pack
+                idx_h_dum, idx_h, idx_t_dum, idx_t = pack
+
                 x_h, x_t = self.X[idx_h.long()].to(self.device), self.X[idx_t.long()].to(self.device)
                 z_h_Q, z_t_Q = self.Q(x_h), self.Q(x_t)
                 z_h, z_t = z_h_Q.clone().detach().cpu(), z_t_Q.clone().detach().cpu()
 
-                z_h,z_t = self.manual_single_update(z_h, z_t, idx_h,alpha,neighbors_of_h, mu_ij_of_neighbors_of_h)#,early)
+                z_h,z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
                 loss_l = (z_h.to(self.device)-z_h_Q).pow(2).mean()+ (z_t.to(self.device)-z_t_Q).pow(2).mean()
 
 
