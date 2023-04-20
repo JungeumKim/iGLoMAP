@@ -98,14 +98,11 @@ class  iGLoMAP():
                                    neighbor_rule=random_idx_generator,
                                    return_idx=True)
         def my_collate(batch):
-            #set_trace()
-            data = [[item[i] for item in batch] for i in range(6)]
-            data[0] = torch.cat(data[0])
-            data[1] = torch.LongTensor(data[1])
-            data[2] = torch.cat(data[2])
-            data[3] = torch.LongTensor(data[3])
-
-            return data
+            set_trace()
+            data = [item[0] for item in batch]
+            target = [item[1] for item in batch]
+            target = torch.LongTensor(target)
+            return [data, target]
 
         self.g_loader = DataLoader(indx_dataset_g,
                               batch_size=self.batch_size,
@@ -142,7 +139,7 @@ class  iGLoMAP():
         print("The learning is prepared")
         
         print("The particle algorithm")
-        return self._fit_particle()
+        self._fit_particle()
 
         #set_trace()
         if (eval) and (not  isinstance(Y, type(None))):
@@ -227,7 +224,8 @@ class  iGLoMAP():
             plt.show()
         plt.close()
 
-    def manual_single_negative_grad(self,z_h,a,b,mu_s):
+    def manual_single_negative_grad(self,z_h,a,b,neighbors_of_h, mu_ij_of_neighbors_of_h):
+        set_trace()
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
         deno = (0.001 + z_dist_square) * (a * z_dist_square.pow(b) + 1)
 
@@ -237,14 +235,10 @@ class  iGLoMAP():
         diff = -torch_pairwise_distances(z_h, dim=2, reduction=None)
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
-        neg_step = neg_step * np.expand_dims(1-mu_s,2)
         return neg_step
-
     def manual_single_update(self, z_h, z_t, idx_h,alpha,neighbors_of_h, mu_ij_of_neighbors_of_h):
-        mu_s = np.array([[mu_ij_of_neighbors_of_h[i][nb.tolist().index(idx.item())]  if(idx.item() in nb) else 0 for i,nb in enumerate(neighbors_of_h)] for idx in idx_h])
-        mu_s = np.maximum(mu_s, mu_s.T)
         ## negative step
-        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b, mu_s)
+        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b,neighbors_of_h, mu_ij_of_neighbors_of_h)
         neg_step = neg_grad.sum(dim=1)
 
         updated_z_h = z_h + alpha * self.learning_ee * neg_step
@@ -272,19 +266,12 @@ class  iGLoMAP():
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
-                #idx=pack[1][0]
-                #BCD = [idx.item() in nb for nb in pack[4]]
-                #EFG = [[idx.item() in nb for nb in pack[4]] for idx in pack[1]]
-                #A = np.array([[idx.item() in nb for nb in pack[4]] for idx in pack[1]])
-                #print(A.sum())
-                #set_trace()
-                #continue
-                #return pack
-                #A = np.array([[mu_ij_of_neighbors_of_h[i][nb.index(idx.item()]  if(idx.item() in nb) else 0 for i,nb in enumerate(neighbors_of_h)] for idx in idx_h])
+
                 idx_h_dum, idx_h, idx_t_dum, idx_t,neighbors_of_h, mu_ij_of_neighbors_of_h = pack
                 x_h, x_t = self.X[idx_h.long()].to(self.device), self.X[idx_t.long()].to(self.device)
                 z_h_Q, z_t_Q = self.Q(x_h), self.Q(x_t)
                 z_h, z_t = z_h_Q.clone().detach().cpu(), z_t_Q.clone().detach().cpu()
+
                 z_h,z_t = self.manual_single_update(z_h, z_t, idx_h,alpha,neighbors_of_h, mu_ij_of_neighbors_of_h)#,early)
                 loss_l = (z_h.to(self.device)-z_h_Q).pow(2).mean()+ (z_t.to(self.device)-z_t_Q).pow(2).mean()
 
