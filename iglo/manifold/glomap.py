@@ -1,4 +1,3 @@
-from IPython.core.debugger import set_trace
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
