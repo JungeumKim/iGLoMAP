@@ -120,6 +120,5 @@ def iglo_graph(X, n_neighbors):
     rescaled_knn_dists_mat = compute_rescaled_dist(knn_indices, knn_dists, sigmas, 1)
     shortest_D = shortest_path(rescaled_knn_dists_mat, directed=False,
                                       return_predecessors=False)
-
     return shortest_D
 
