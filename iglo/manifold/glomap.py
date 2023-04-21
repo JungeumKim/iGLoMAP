@@ -216,7 +216,7 @@ class  iGLoMAP():
             plt.show()
         plt.close()
 
-    def manual_single_negative_grad(self,z_h,a,b,):
+    def manual_single_negative_grad(self,z_h,a,b,idx_h):
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
         deno = (0.001 + z_dist_square) * (a * z_dist_square.pow(b) + 1)
 
@@ -226,10 +226,11 @@ class  iGLoMAP():
         diff = -torch_pairwise_distances(z_h, dim=2, reduction=None)
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
+        neg_step *= np.expand_dims(1-self.sparse_P[idx_h,:][:,idx_h].todense(),2)
         return neg_step
     def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
-        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b)
+        neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b, idx_h)
         neg_step = neg_grad.sum(dim=1)
 
         updated_z_h = z_h + alpha * self.learning_ee * neg_step
