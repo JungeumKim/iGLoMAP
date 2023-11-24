@@ -34,7 +34,8 @@ class  iGLoMAP():
                  device="cuda",
                  lr_Q = 0.01,
                  conv=False,
-                 Q = None):
+                 Q = None,
+                 use_mapper=True):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -63,6 +64,7 @@ class  iGLoMAP():
         self.lr_Q = lr_Q
         self.conv= conv
         self.Q = Q
+        self.use_mapper = use_mapper
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = True):
         if precalc_graph is None:
@@ -102,8 +104,9 @@ class  iGLoMAP():
                               shuffle=True,
                               num_workers=2)
 
-        if True:
-            rand_seed(self.seed)
+        rand_seed(self.seed)
+
+        if self.use_mapper:
             if self.Q is None:
                 if self.conv:
                     Q = ncg.Q_MNIST_BN(device="cpu", z_dim=self.z_dim,
@@ -120,6 +123,9 @@ class  iGLoMAP():
 
             self.Q = Q.to(self.device)
 
+        else:
+            self.Z = torch.randn(size=(X.shape[0],2), device = "cpu").float()
+
         self.Y = Y
 
         self.X = torch.from_numpy(X).float()
@@ -131,7 +137,11 @@ class  iGLoMAP():
         print("The learning is prepared")
         
         print("The particle algorithm")
-        self._fit_particle()
+        if self.use_mapper:
+            self._fit_particle()
+        else:
+            self._fit_particle_only()
+
 
         #set_trace()
         if (eval) and (not  isinstance(Y, type(None))):
@@ -196,9 +206,10 @@ class  iGLoMAP():
             fig = plt.figure(figsize=(8, 8))
             axis = fig.add_subplot(111)
 
-        if True:
+        if self.use_mapper:
             self.Z = self.get_Z(self.X)
-            Z0 = self.Z.numpy()
+
+        Z0 = self.Z.numpy()
 
 
         if color is None:
@@ -292,3 +303,22 @@ class  iGLoMAP():
         for K in nns:
             results.update({K:cls(K)})
         return results
+
+
+    def _fit_particle_only(self):
+        for epochs in range(self.EPOCHS):
+            alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
+            #early = (epochs < self.EPOCHS*0.3)
+            for ii, pack in enumerate(self.g_loader):
+
+                idx_h_dum, idx_h, idx_t_dum, idx_t = pack
+                z_h, z_t = self.Z[idx_h.long()], self.Z[idx_t.long()]
+                self.Z[idx_h.long()], self.Z[idx_t.long()] = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
+
+            if ((epochs % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
+                if self.vis_dir is None:
+                    path=None
+                else:
+                    path = join(self.vis_dir, F"epoch{epochs + 1}")
+                self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
+                        path=path,s=self.vis_s)
