@@ -22,3 +22,11 @@ iglo.egg-info/
 numerical_analysis/
 numerical_analysis_for_submission/
 iglo_repo/
+
+dist/
+build/
+
+JMLR_revision_experiment
+iglo/worktree_maker.init
+
+nonmanp_numerical_analysis_for_submission

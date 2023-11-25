@@ -35,7 +35,7 @@ class  iGLoMAP():
                  lr_Q = 0.01,
                  conv=False,
                  Q = None,
-                 use_mapper=True):
+                 use_mapper=True, Z=None):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -65,6 +65,7 @@ class  iGLoMAP():
         self.conv= conv
         self.Q = Q
         self.use_mapper = use_mapper
+        self.Z = Z
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = True):
         if precalc_graph is None:
@@ -124,8 +125,10 @@ class  iGLoMAP():
             self.Q = Q.to(self.device)
 
         else:
-            self.Z = torch.randn(size=(X.shape[0],2), device = "cpu").float()
-
+            if self.Z is None:
+                self.Z = torch.randn(size=(X.shape[0],2), device = "cpu").float()
+            else:
+                assert self.Z.shape[0] == X.shape[0]
         self.Y = Y
 
         self.X = torch.from_numpy(X).float()
@@ -313,8 +316,8 @@ class  iGLoMAP():
 
                 idx_h_dum, idx_h, idx_t_dum, idx_t = pack
                 z_h, z_t = self.Z[idx_h.long()], self.Z[idx_t.long()]
-                self.Z[idx_h.long()], self.Z[idx_t.long()] = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
-
+                z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
+                self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h.float(),z_t.float()
             if ((epochs % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
                 if self.vis_dir is None:
                     path=None
