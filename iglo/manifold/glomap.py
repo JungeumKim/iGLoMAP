@@ -36,7 +36,7 @@ class  iGLoMAP():
                  conv=False,
                  Q = None,
                  use_mapper=True,
-                 Z=None):
+                 Z=None, sigma=1):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -67,6 +67,7 @@ class  iGLoMAP():
         self.Q = Q
         self.use_mapper = use_mapper
         self.Z = Z
+        self.sigma = sigma
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
         if precalc_graph is None:
@@ -81,7 +82,7 @@ class  iGLoMAP():
             g_dist[g_dist > self.d_thresh] = float("inf")
 
             #g_dist[g_dist == 0] = float("inf")
-            P = np.exp(-g_dist)
+            P = np.exp(-g_dist/self.sigma)
             np.fill_diagonal(P, 0)
             del g_dist
             self.sparse_P = sparse.csr_matrix(P)
