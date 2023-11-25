@@ -71,31 +71,35 @@ class  iGLoMAP():
         self.sigma = sigma
         self.exact_mu = exact_mu
 
+    def P_update(self,sig):
+
+        #g_dist[g_dist == 0] = float("inf")
+        P = np.exp(-self.g_dist/sig)
+        np.fill_diagonal(P, 0)
+        #del g_dist
+        self.sparse_P = sparse.csr_matrix(P)
+        del P
+
+        v_i_dot = self.sparse_P.sum(axis=1)
+        v_i_dot = torch.from_numpy(v_i_dot)
+        vm = v_i_dot.max()
+        v_i_dot /= vm
+        self.v_i_dot = v_i_dot
+        self.learning_ee = self.ee/vm
+
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
         if precalc_graph is None:
             g_dist = iglo_graph(X, self.n_neighbors, shortest_path_comp = shortest_path_comp)
-            if save_shortest_path:
-                self.shortest_path = np.copy(g_dist)
+            #if save_shortest_path:
+            #    self.shortest_path = np.copy(g_dist)
         else:
             g_dist = precalc_graph
-
-
-        if True:
-            g_dist[g_dist > self.d_thresh] = float("inf")
-
-            #g_dist[g_dist == 0] = float("inf")
-            P = np.exp(-g_dist/self.sigma)
-            np.fill_diagonal(P, 0)
-            del g_dist
-            self.sparse_P = sparse.csr_matrix(P)
-            del P
-
-            v_i_dot = self.sparse_P.sum(axis=1)
-            v_i_dot = torch.from_numpy(v_i_dot)
-            vm = v_i_dot.max()
-            v_i_dot /= vm
-            self.v_i_dot = v_i_dot
-        self.learning_ee = self.ee/vm
+        g_dist[g_dist > self.d_thresh] = float("inf")
+        self.g_dist = g_dist
+        self.P_update(sig = self.sigma)
+        if not save_shortest_path:
+            if self.use_mapper:
+                del self.g_dist
 
         def random_idx_generator(idx):
             return random_nb_sparse(self.sparse_P, idx)
@@ -275,6 +279,8 @@ class  iGLoMAP():
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
+
+
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
 
@@ -316,9 +322,14 @@ class  iGLoMAP():
     def _fit_particle_only(self):
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
+
+            if (epochs>5) and (epochs % 10 == 0):
+                if self.sigma != 1:
+                    sig = self.sigma - (self.sigma-1) * (float(epochs) / float(self.EPOCHS)) #m
+                    self.P_update(sig = sig)
+
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
-
                 idx_h_dum, idx_h, idx_t_dum, idx_t = pack
                 z_h, z_t = self.Z[idx_h.long()], self.Z[idx_t.long()]
                 z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
