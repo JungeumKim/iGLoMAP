@@ -36,7 +36,7 @@ class  iGLoMAP():
                  conv=False,
                  Q = None,
                  use_mapper=True,
-                 Z=None, sigma=1,
+                 Z=None, initial_sigma=1,end_sigma =1,
                  exact_mu = True):
 
         ''' ARGUMENTS:
@@ -68,7 +68,9 @@ class  iGLoMAP():
         self.Q = Q
         self.use_mapper = use_mapper
         self.Z = Z
-        self.sigma = sigma
+        self.initial_sigma = initial_sigma
+        self.end_sigma= end_sigma
+
         self.exact_mu = exact_mu
 
     def P_update(self,sig):
@@ -96,7 +98,7 @@ class  iGLoMAP():
             g_dist = precalc_graph
         g_dist[g_dist > self.d_thresh] = float("inf")
         self.g_dist = g_dist
-        self.P_update(sig = self.sigma)
+        self.P_update(sig = self.initial_sigma)
         if not save_shortest_path:
             if self.use_mapper:
                 del self.g_dist
@@ -324,8 +326,8 @@ class  iGLoMAP():
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
 
             if (epochs>5) and (epochs % 50 == 0):
-                if self.sigma != 1:
-                    sig = self.sigma - (self.sigma-1) * (float(epochs) / float(self.EPOCHS)) **(2) #m
+                if not ((self.initial_sigma ==1) and (self.end_sigma==1)):
+                    sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) **(2) #m
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
