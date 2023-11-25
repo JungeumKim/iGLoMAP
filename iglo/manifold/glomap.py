@@ -35,7 +35,8 @@ class  iGLoMAP():
                  lr_Q = 0.01,
                  conv=False,
                  Q = None,
-                 use_mapper=True, Z=None):
+                 use_mapper=True,
+                 Z=None):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -67,9 +68,9 @@ class  iGLoMAP():
         self.use_mapper = use_mapper
         self.Z = Z
 
-    def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = True):
+    def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
         if precalc_graph is None:
-            g_dist = iglo_graph(X, self.n_neighbors)
+            g_dist = iglo_graph(X, self.n_neighbors, shortest_path_comp = shortest_path_comp)
             if save_shortest_path:
                 self.shortest_path = np.copy(g_dist)
         else:
@@ -135,8 +136,8 @@ class  iGLoMAP():
 
         self.nu = torch.tensor(self.sparse_P.todense())
 
-    def fit_transform(self, X, Y=None,precalc_graph=None, eval=True):
-        self._fit_prepare(X, Y, precalc_graph)
+    def fit_transform(self, X, Y=None,precalc_graph=None, eval=True,save_shortest_path = False):
+        self._fit_prepare(X, Y, precalc_graph, save_shortest_path)
         print("The learning is prepared")
         
         print("The particle algorithm")
