@@ -136,8 +136,8 @@ class  iGLoMAP():
 
         self.nu = torch.tensor(self.sparse_P.todense())
 
-    def fit_transform(self, X, Y=None,precalc_graph=None, eval=True,save_shortest_path = False):
-        self._fit_prepare(X, Y, precalc_graph, save_shortest_path)
+    def fit_transform(self, X, Y=None,precalc_graph=None, eval=True,save_shortest_path = False, shortest_path_comp=True):
+        self._fit_prepare(X, Y, precalc_graph, save_shortest_path, shortest_path_comp)
         print("The learning is prepared")
         
         print("The particle algorithm")
