@@ -36,7 +36,8 @@ class  iGLoMAP():
                  conv=False,
                  Q = None,
                  use_mapper=True,
-                 Z=None, sigma=1):
+                 Z=None, sigma=1,
+                 exact_mu = True):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -68,6 +69,7 @@ class  iGLoMAP():
         self.use_mapper = use_mapper
         self.Z = Z
         self.sigma = sigma
+        self.exact_mu = exact_mu
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
         if precalc_graph is None:
@@ -242,7 +244,8 @@ class  iGLoMAP():
         diff = -torch_pairwise_distances(z_h, dim=2, reduction=None)
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
-        neg_step *= np.expand_dims(1-self.sparse_P[idx_h,:][:,idx_h].todense(),2)
+        if self.exact_mu:
+            neg_step *= np.expand_dims(1-self.sparse_P[idx_h,:][:,idx_h].todense(),2)
         return neg_step
     def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
