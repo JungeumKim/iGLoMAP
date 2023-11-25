@@ -92,7 +92,7 @@ class  iGLoMAP():
             vm = v_i_dot.max()
             v_i_dot /= vm
             self.v_i_dot = v_i_dot
-        self.learning_ee = self.ee
+        self.learning_ee = self.ee/vm
 
         def random_idx_generator(idx):
             return random_nb_sparse(self.sparse_P, idx)
