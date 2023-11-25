@@ -321,11 +321,11 @@ class  iGLoMAP():
 
     def _fit_particle_only(self):
         for epochs in range(self.EPOCHS):
-            alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))**(2) #mannual step size.
+            alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
 
             if (epochs>5) and (epochs % 10 == 0):
                 if self.sigma != 1:
-                    sig = self.sigma - (self.sigma-1) * (float(epochs) / float(self.EPOCHS)) #m
+                    sig = self.sigma - (self.sigma-1) * (float(epochs) / float(self.EPOCHS)) **(2) #m
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
