@@ -116,4 +116,4 @@ def iglo_graph(X, n_neighbors, shortest_path_comp=True):
     if shortest_path_comp:
         return shortest_path(rescaled_knn_dists_mat, directed=False, return_predecessors=False)
     else:
-        return rescaled_knn_dists_mat
+        return rescaled_knn_dists_mat.toarray()
