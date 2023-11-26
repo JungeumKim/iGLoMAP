@@ -36,7 +36,9 @@ class  iGLoMAP():
                  conv=False,
                  Q = None,
                  use_mapper=True,
-                 Z=None, initial_sigma=1,end_sigma =1,
+                 Z=None,
+                 initial_sigma=1,
+                 end_sigma =1,
                  exact_mu = True):
 
         ''' ARGUMENTS:
@@ -327,7 +329,7 @@ class  iGLoMAP():
 
             if (epochs>5) and (epochs % 50 == 0):
                 if not ((self.initial_sigma ==1) and (self.end_sigma==1)):
-                    sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) **(2) #m
+                    sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) #**(2) #m
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
