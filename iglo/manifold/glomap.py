@@ -39,7 +39,7 @@ class  iGLoMAP():
                  Z=None,
                  initial_sigma=1,
                  end_sigma =1,
-                 exact_mu = True):
+                 exact_mu = True, rainbow=False):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -74,6 +74,7 @@ class  iGLoMAP():
         self.end_sigma= end_sigma
 
         self.exact_mu = exact_mu
+        self.rainbow=rainbow
 
     def P_update(self,sig):
 
@@ -343,5 +344,7 @@ class  iGLoMAP():
                     path=None
                 else:
                     path = join(self.vis_dir, F"epoch{epochs + 1}")
+                    torch.save(self.Z, self.vis_dir + F"epoch{epochs + 1}.dat" )
                 self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
-                        path=path,s=self.vis_s)
+                        path=path,s=self.vis_s,rainbow=self.rainbow)
+
