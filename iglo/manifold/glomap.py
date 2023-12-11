@@ -12,6 +12,7 @@ from scipy.spatial.distance import pdist, squareform
 import iglo._networks.network_conv_grey as ncg
 import iglo._networks.network_toy as nt
 from os.path import join
+import copy
 
 class  iGLoMAP():
     def __init__(self,
@@ -252,7 +253,7 @@ class  iGLoMAP():
             plt.close()
         if self.save_vis:
             assert epochs is not None
-            self.Z_list.update({epochs:Z0})
+            self.Z_list.update({epochs:copy.copy(Z0)})
 
     def manual_single_negative_grad(self,z_h,a,b,idx_h):
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
