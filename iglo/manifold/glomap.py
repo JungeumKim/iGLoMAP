@@ -358,7 +358,7 @@ class  iGLoMAP():
                 z_h, z_t = self.Z[idx_h.long()], self.Z[idx_t.long()]
                 z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
                 self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h.float(),z_t.float()
-            if ((epochs % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
+            if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
                 if self.vis_dir is None:
                     path=None
                 else:
