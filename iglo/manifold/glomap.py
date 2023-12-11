@@ -39,7 +39,7 @@ class  iGLoMAP():
                  Z=None,
                  initial_sigma=1,
                  end_sigma =1,
-                 exact_mu = True, rainbow=False):
+                 exact_mu = True, rainbow=False, save_vis=False):
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -75,6 +75,9 @@ class  iGLoMAP():
 
         self.exact_mu = exact_mu
         self.rainbow=rainbow
+        self.save_vis = save_vis
+        if self.save_vis:
+            self.Z_list = {}
 
     def P_update(self,sig):
 
@@ -179,7 +182,8 @@ class  iGLoMAP():
         Z = torch.cat(Z0)
         return Z
 
-    def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None, show=True):
+    def generalization(self, X, Y = None, plot = True, axis=None, s=1, title=None,path = None,
+                       show=True,close=True, epochs = None):
         if isinstance(X,np.ndarray):
             X = torch.tensor(X).float()
         Z0 = self.get_Z(X).numpy()
@@ -200,13 +204,16 @@ class  iGLoMAP():
                 fig.savefig(path)
             if show:
                 plt.show()
+            if close:
                 plt.close()
-
+            if self.save_vis:
+                assert epochs is not None
+                self.Z_list.update({epochs:Z0})
         return Z0
 
 
 
-    def vis(self,Y=None,axis=None, s=1, show=False,title=None,path=None,rainbow=False):
+    def vis(self,Y=None,axis=None, s=1, show=False,title=None,path=None,rainbow=False, close=True, epochs = None):
 
         if Y is not None:
             color = Y
@@ -241,7 +248,11 @@ class  iGLoMAP():
             fig.savefig(path)
         if show:
             plt.show()
-        plt.close()
+        if close:
+            plt.close()
+        if self.save_vis:
+            assert epochs is not None
+            self.Z_list.update({epochs:Z0})
 
     def manual_single_negative_grad(self,z_h,a,b,idx_h):
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
@@ -280,6 +291,10 @@ class  iGLoMAP():
         return next_z_h, next_z_t
 
     def _fit_particle(self):
+        if self.save_vis:
+            self.vis(show=self.show,title=F"initial",
+                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs =0)
+
         optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
         for epochs in range(self.EPOCHS):
@@ -304,13 +319,13 @@ class  iGLoMAP():
                 loss.backward()
                 optim.step()
             scheduler.step()
-            if ((epochs % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
+            if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
                 if self.vis_dir is None:
                     path=None
                 else:
                     path = join(self.vis_dir, F"epoch{epochs + 1}")
                 self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}", 
-                        path=path,s=self.vis_s)
+                        path=path,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
 
 
     def eval(self,Y,nns=[1, 2, 3, 4, 5, 10, 30]):
@@ -325,6 +340,10 @@ class  iGLoMAP():
 
 
     def _fit_particle_only(self):
+        if self.save_vis:
+            self.vis(show=self.show,title=F"initial",
+                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs =0)
+
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
 
@@ -346,5 +365,5 @@ class  iGLoMAP():
                     path = join(self.vis_dir, F"epoch{epochs + 1}")
                     torch.save(self.Z, self.vis_dir + F"epoch{epochs + 1}.dat" )
                 self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
-                        path=path,s=self.vis_s,rainbow=self.rainbow)
+                        path=path,s=self.vis_s,rainbow=self.rainbow,epochs = epochs+1)
 
