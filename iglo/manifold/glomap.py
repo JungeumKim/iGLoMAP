@@ -108,7 +108,7 @@ class  iGLoMAP():
         self.P_update(sig = self.initial_sigma)
         if not save_shortest_path:
             if self.use_mapper:
-                if not ((self.initial_sigma ==1) and (self.end_sigma==1)):
+                if ((self.initial_sigma ==1) and (self.end_sigma==1)):
                     del self.g_dist
 
         def random_idx_generator(idx):
