@@ -17,7 +17,7 @@ import copy
 class  iGLoMAP():
     def __init__(self,
                  n_neighbors = 5,
-                 d_thresh = 10,
+                 #d_thresh = 10,
                  ee = None,
                  a = 1.57694,
                  b = 0.8951,
@@ -49,7 +49,7 @@ class  iGLoMAP():
         ee: the weight of the loss for the negative part
         device, lr_Q, conv: for the inductive modeling
         '''
-        self.d_thresh = d_thresh
+        #self.d_thresh = d_thresh
         self.n_neighbors = n_neighbors
         self.ee = 1 if ee is None else ee
         self.a = a
@@ -103,7 +103,7 @@ class  iGLoMAP():
             #    self.shortest_path = np.copy(g_dist)
         else:
             g_dist = precalc_graph
-        g_dist[g_dist > self.d_thresh] = float("inf")
+        #g_dist[g_dist > self.d_thresh] = float("inf")
         self.g_dist = g_dist
         self.P_update(sig = self.initial_sigma)
         if not save_shortest_path:
