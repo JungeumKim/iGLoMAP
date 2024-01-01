@@ -18,7 +18,7 @@ class  iGLoMAP():
     def __init__(self,
                  n_neighbors = 5,
                  d_thresh = 10,
-                 ee = 0.1,
+                 ee = None,
                  a = 1.57694,
                  b = 0.8951,
                  initial_lr = 1,
@@ -51,7 +51,7 @@ class  iGLoMAP():
         '''
         self.d_thresh = d_thresh
         self.n_neighbors = n_neighbors
-        self.ee = ee
+        self.ee = 1 if ee is None else ee
         self.a = a
         self.b = b
         self.initial_lr = initial_lr
