@@ -303,7 +303,7 @@ class  iGLoMAP():
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
 
             if (epochs>5) and (epochs % 50 == 0):
-                if (self.initial_sigma !=self.end_sigma==1):
+                if (self.initial_sigma !=self.end_sigma):
                     sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) #**(2) #m
                     self.P_update(sig = sig)
 
