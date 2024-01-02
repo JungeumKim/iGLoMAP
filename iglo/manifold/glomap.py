@@ -89,10 +89,9 @@ class  iGLoMAP():
         self.sigma_scaled=False
         self.exact_mu = exact_mu
         self.rainbow=rainbow
-        self.save_vis = save_vis
+        self.save_Z = save_vis
 
-
-        if self.save_vis:
+        if self.save_Z:
             self.Z_list = {}
         print("iGLoMAP initialized")
 
@@ -233,9 +232,7 @@ class  iGLoMAP():
                 plt.show()
             if close:
                 plt.close()
-            if self.save_vis:
-                assert epochs is not None
-                self.Z_list.update({epochs:Z0})
+
         return Z0
 
 
@@ -261,7 +258,6 @@ class  iGLoMAP():
 
         Z0 = self.Z.numpy()
 
-
         if color is None:
             axis.scatter(Z0[:, 0], Z0[:, 1], s=s)
         else:
@@ -277,9 +273,8 @@ class  iGLoMAP():
             plt.show()
         if close:
             plt.close()
-        if self.save_vis:
-            assert epochs is not None
-            self.Z_list.update({epochs:copy.copy(Z0)})
+        return copy.copy(Z0)
+
 
     def manual_single_negative_grad(self,z_h,a,b,idx_h):
         z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
@@ -318,9 +313,7 @@ class  iGLoMAP():
         return next_z_h, next_z_t
 
     def _fit_particle(self):
-        if self.save_vis:
-            self.vis(show=self.show,title=F"initial",
-                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs =0)
+        self.Z_list.update({0:copy.copy(self.Z)})
 
         optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
@@ -344,20 +337,20 @@ class  iGLoMAP():
                 z_h,z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
                 loss_l = (z_h.to(self.device)-z_h_Q).pow(2).mean()+ (z_t.to(self.device)-z_t_Q).pow(2).mean()
 
-
                 loss = loss_l
                 optim.zero_grad()
                 loss.backward()
                 optim.step()
             scheduler.step()
             if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
-                if self.vis_dir is None:
-                    path=None
-                else:
-                    path = join(self.vis_dir, F"epoch{epochs + 1}")
-                self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}", 
-                        path=path,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
+                z0 = self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
+                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
+                if self.save_Z:
+                    self.Z_list.update({epochs:copy.copy(z0)})
 
+        if self.vis_dir is not None:
+            path = join(self.vis_dir, F"z_list.dat")
+            torch.save(self.Z_list, path)
 
     def eval(self,Y,nns=[1, 2, 3, 4, 5, 10, 30]):
         Z_np = self.Z.clone().detach().numpy()
@@ -371,9 +364,7 @@ class  iGLoMAP():
 
 
     def _fit_particle_only(self):
-        if self.save_vis:
-            self.vis(show=self.show,title=F"initial",
-                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs =0)
+        self.Z_list.update({0:copy.copy(self.Z)})
 
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
@@ -390,11 +381,11 @@ class  iGLoMAP():
                 z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
                 self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h.float(),z_t.float()
             if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
-                if self.vis_dir is None:
-                    path=None
-                else:
-                    path = join(self.vis_dir, F"epoch{epochs + 1}")
-                    torch.save(self.Z, self.vis_dir + F"epoch{epochs + 1}.dat" )
-                self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
-                        path=path,s=self.vis_s,rainbow=self.rainbow,epochs = epochs+1)
+                z0 = self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
+                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
+                if self.save_Z:
+                    self.Z_list.update({epochs:copy.copy(z0)})
 
+        if self.vis_dir is not None:
+            path = join(self.vis_dir, F"z_list.dat")
+            torch.save(self.Z_list, path)
