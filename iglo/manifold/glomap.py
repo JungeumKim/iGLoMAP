@@ -42,6 +42,8 @@ class  iGLoMAP():
                  Z=None,
                  initial_sigma=1,
                  end_sigma =1,
+                 initial_tau_percentile=None, #75
+                 end_tau_percentile = None, #15
                  exact_mu = True, rainbow=False, save_vis=False):
 
         ''' ARGUMENTS:
@@ -75,13 +77,17 @@ class  iGLoMAP():
         self.Z = Z
         self.initial_sigma = initial_sigma
         self.end_sigma= end_sigma
-
+        self.initial_tau_percentile = initial_tau_percentile
+        self.end_tau_percentile = end_tau_percentile
+        self.sigma_scaled=False
         self.exact_mu = exact_mu
         self.rainbow=rainbow
         self.save_vis = save_vis
+
         if self.save_vis:
             self.Z_list = {}
         print("iGLoMAP initialized")
+
     def P_update(self,sig):
 
         #g_dist[g_dist == 0] = float("inf")
@@ -108,8 +114,13 @@ class  iGLoMAP():
         #set_trace()
         #g_dist[g_dist > self.d_thresh] = float("inf")
         self.g_dist = g_dist
+        if self.end_tau_percentile is not None:
+            if not self.sigma_scaled:
+                self.percentiles = np.percentile(self.g_dist.reshape(-1), [self.end_tau_percentile,self.initial_tau_percentile])
+                self.initial_sigma = self.initial_sigma/self.percentiles[1]
+                self.end_sigma= self.end_sigma/self.percentiles[0]
+                self.sigma_scaled=True
         self.P_update(sig = self.initial_sigma)
-
 
         def random_idx_generator(idx):
             return random_nb_sparse(self.sparse_P, idx)
