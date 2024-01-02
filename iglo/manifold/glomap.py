@@ -15,6 +15,13 @@ import iglo._networks.network_conv_grey as ncg
 import iglo._networks.network_toy as nt
 from os.path import join
 import copy
+import time
+
+def timer(e_time):
+    hours, remainder = divmod(e_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{int(hours)}h:{int(minutes)}m:{int(seconds)}s"
+    #return hours, minutes, seconds
 
 class  iGLoMAP():
     def __init__(self,
@@ -84,6 +91,7 @@ class  iGLoMAP():
         self.rainbow=rainbow
         self.save_vis = save_vis
 
+
         if self.save_vis:
             self.Z_list = {}
         print("iGLoMAP initialized")
@@ -105,6 +113,7 @@ class  iGLoMAP():
         self.learning_ee = self.ee/vm
 
     def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
+
         if precalc_graph is None:
             g_dist = iglo_graph(X, self.n_neighbors, shortest_path_comp = shortest_path_comp)
             #if save_shortest_path:
@@ -165,15 +174,20 @@ class  iGLoMAP():
         self.nu = torch.tensor(self.sparse_P.todense())
 
     def fit_transform(self, X, Y=None,precalc_graph=None, eval=True,save_shortest_path = False, shortest_path_comp=True):
+        begin = time.time()
         self._fit_prepare(X, Y, precalc_graph, save_shortest_path, shortest_path_comp)
-        print("The learning is prepared")
-        
-        print("The particle algorithm")
+        end = time.time()
+        self.preparation_time = end - begin
+        print(F"The learning is prepared, time spent:{timer(self.preparation_time)}")
+
+        begin = time.time()
         if self.use_mapper:
             self._fit_particle()
         else:
             self._fit_particle_only()
-
+        end = time.time()
+        self.fitting_time = end - begin
+        print(F"iGLoMAP fitting done, time spent: {timer(self.fitting_time)}")
 
         #set_trace()
         if (eval) and (not  isinstance(Y, type(None))):
