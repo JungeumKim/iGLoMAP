@@ -19,7 +19,7 @@ import copy
 class  iGLoMAP():
     def __init__(self,
                  n_neighbors = 5,
-                 d_thresh = np.inf,
+                 #d_thresh = np.inf,
                  ee = None,
                  a = 1.57694,
                  b = 0.8951,
@@ -51,7 +51,7 @@ class  iGLoMAP():
         ee: the weight of the loss for the negative part
         device, lr_Q, conv: for the inductive modeling
         '''
-        self.d_thresh = d_thresh
+        #self.d_thresh = d_thresh
         self.n_neighbors = n_neighbors
         self.ee = 1 if ee is None else ee
         self.a = a
@@ -81,7 +81,7 @@ class  iGLoMAP():
         self.save_vis = save_vis
         if self.save_vis:
             self.Z_list = {}
-
+        print("iGLoMAP initialized")
     def P_update(self,sig):
 
         #g_dist[g_dist == 0] = float("inf")
