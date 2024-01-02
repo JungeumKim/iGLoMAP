@@ -1,3 +1,5 @@
+from IPython.core.debugger import set_trace
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
@@ -103,6 +105,7 @@ class  iGLoMAP():
             #    self.shortest_path = np.copy(g_dist)
         else:
             g_dist = precalc_graph
+        set_trace()
         g_dist[g_dist > self.d_thresh] = float("inf")
         self.g_dist = g_dist
         self.P_update(sig = self.initial_sigma)
