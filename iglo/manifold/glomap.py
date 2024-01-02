@@ -18,7 +18,7 @@ import copy
 
 class  iGLoMAP():
     def __init__(self,
-                 n_neighbors = 5,
+                 n_neighbors = 15,
                  #d_thresh = np.inf,
                  ee = None,
                  a = 1.57694,
@@ -27,7 +27,7 @@ class  iGLoMAP():
                  end_lr = 0,
                  batch_size = 100,
                  z_dim=2,
-                 EPOCHS = 500,
+                 EPOCHS = 300,
                  plot_freq = 20,
                  seed=1234,
                  show=True,
