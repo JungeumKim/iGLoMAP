@@ -119,12 +119,15 @@ class  iGLoMAP():
             #    self.shortest_path = np.copy(g_dist)
         else:
             g_dist = precalc_graph
+
         #set_trace()
         #g_dist[g_dist > self.d_thresh] = float("inf")
         self.g_dist = g_dist
         if self.end_tau_percentile is not None:
             if not self.sigma_scaled:
-                self.percentiles = np.percentile(self.g_dist.reshape(-1), [self.end_tau_percentile,self.initial_tau_percentile])
+                mat = self.g_dist
+                mat = mat[np.isfinite(mat)&(mat!=0)]
+                self.percentiles = np.percentile(mat.reshape(-1), [self.end_tau_percentile,self.initial_tau_percentile])
                 self.initial_sigma = self.initial_sigma/self.percentiles[1]
                 self.end_sigma= self.end_sigma/self.percentiles[0]
                 self.sigma_scaled=True
