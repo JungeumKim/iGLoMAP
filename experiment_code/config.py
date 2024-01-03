@@ -22,7 +22,7 @@ def parse_args(args, name_space):
 
     #data:
     parser.add_argument('--n_data',  type=int, default = 6000)
-    parser.add_argument('--n_epoch', type=int, default = 100,
+    parser.add_argument('--n_epoch', type=int, default = 300,
                         help= 'latent dimension')
     #parser.add_argument('--ee',       type=float, default = 1)
 

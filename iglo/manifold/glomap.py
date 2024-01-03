@@ -346,7 +346,7 @@ class  iGLoMAP():
                 z0 = self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
                         path=None,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
                 if self.save_Z:
-                    self.Z_list.update({epochs:copy.copy(z0)})
+                    self.Z_list.update({epochs+1:copy.copy(z0)})
 
         if self.vis_dir is not None:
             path = join(self.vis_dir, F"z_list.dat")
@@ -384,7 +384,7 @@ class  iGLoMAP():
                 z0 = self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
                         path=None,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
                 if self.save_Z:
-                    self.Z_list.update({epochs:copy.copy(z0)})
+                    self.Z_list.update({epochs+1:copy.copy(z0)})
 
         if self.vis_dir is not None:
             path = join(self.vis_dir, F"z_list.dat")
