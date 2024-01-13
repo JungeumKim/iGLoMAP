@@ -1,7 +1,8 @@
 annals
 models
 runs
-
+iglo_repo
+iglo_bak_before_JMLR_revision
 #*
 #!.gitignore
 #!sourceCode/
@@ -21,3 +22,11 @@ iglo.egg-info/
 numerical_analysis/
 numerical_analysis_for_submission/
 iglo_repo/
+
+dist/
+build/
+
+JMLR_revision_experiment
+iglo/worktree_maker.init
+
+nonmanp_numerical_analysis_for_submission

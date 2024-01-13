@@ -59,11 +59,11 @@ class Neighbor_dataset(Dataset):
     
     def __getitem__(self, idx):
         
-        nb_idx, neighbors, mu_ij_of_neighbors  = self.neighbor_rule(idx)
-        if self.none_y:
-            if self.return_idx:
-                # this is the case used in iglomap.
-                return self.X[idx], idx, self.X[nb_idx], nb_idx,neighbors, mu_ij_of_neighbors
+        nb_idx = self.neighbor_rule(idx)
+        
+        if self.none_y: 
+            if self.return_idx: 
+                return self.X[idx], idx, self.X[nb_idx], nb_idx
             else:
                 return self.X[idx], self.X[nb_idx]
         else: 
@@ -100,7 +100,3 @@ class Neighbor_dataset_f(Dataset):
                 return *self.dataset[idx], idx, *self.dataset[nb_idx], nb_idx
             else:
                 return *self.dataset[idx], *self.dataset[nb_idx]
-
-
-
-

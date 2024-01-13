@@ -334,13 +334,18 @@ class  iGLoMAP():
 
     def _fit_particle(self):
         self.Z_list.update({0:self.Z.clone().detach().cpu().numpy()})
-
         optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.98)
+        
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
-
-            if (epochs>5) and (epochs % 50 == 0):
+            
+            
+            
+            
+            if (epochs>5) and (epochs % 20 == 0):
+                optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q * (0.98**epochs))
+                scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.98)
                 if (self.initial_sigma !=self.end_sigma):
                     if self.linear_tau:
                         sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) 
