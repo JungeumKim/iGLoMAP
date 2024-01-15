@@ -140,7 +140,7 @@ class  iGLoMAP():
 
 
         if self.m_thresh is not None:
-            nbrs = NearestNeighbors(n_neighbors=self.K *self.m_thresh, metric='precomputed')
+            nbrs = NearestNeighbors(n_neighbors=self.n_neighbors *self.m_thresh, metric='precomputed')
             nbrs.fit(g_dist)
             g_dist,_ = nbrs.kneighbors(g_dist)
 
