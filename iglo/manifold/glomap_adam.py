@@ -1,5 +1,5 @@
 from IPython.core.debugger import set_trace
-
+from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
@@ -49,8 +49,7 @@ class  iGLoMAP():
                  Z=None,
                  initial_sigma=1,
                  end_sigma =1,
-                 initial_tau_percentile=None, #75
-                 end_tau_percentile = None, #15
+                 m_thresh = None,
                  exact_mu = True, rainbow=False, save_vis=False, distance_normalization=False,
                 distance_normalization_percentile=False, linear_tau=True):
         
@@ -86,8 +85,6 @@ class  iGLoMAP():
         self.Z = Z
         self.initial_sigma = initial_sigma
         self.end_sigma= end_sigma
-        self.initial_tau_percentile = initial_tau_percentile
-        self.end_tau_percentile = end_tau_percentile
         self.sigma_scaled=False
         self.exact_mu = exact_mu
         self.rainbow=rainbow
@@ -95,7 +92,8 @@ class  iGLoMAP():
         self.distance_normalization = distance_normalization
         self.distance_normalization_percentile = distance_normalization_percentile
         self.linear_tau = linear_tau
-       
+        self.m_thresh = m_thresh
+
         self.Z_list = {}
         print("iGLoMAP initialized")
 
@@ -132,6 +130,7 @@ class  iGLoMAP():
             norm = np.median(data_1d)
             print(norm)
             g_dist = g_dist/(norm/3)
+
         elif self.distance_normalization_percentile:
             data_1d = g_dist.reshape(-1)
             data_1d = data_1d[np.isfinite(data_1d)]
@@ -139,15 +138,14 @@ class  iGLoMAP():
             print(norm)
             g_dist = g_dist/(norm)
 
+
+        if self.m_thresh is not None:
+            nbrs = NearestNeighbors(n_neighbors=self.K *self.m_thresh, metric='precomputed')
+            nbrs.fit(g_dist)
+            g_dist,_ = nbrs.kneighbors(g_dist)
+
         self.g_dist = g_dist
-        if self.end_tau_percentile is not None:
-            if not self.sigma_scaled:
-                mat = self.g_dist
-                mat = mat[np.isfinite(mat)&(mat!=0)]
-                self.percentiles = np.percentile(mat.reshape(-1), [self.end_tau_percentile,self.initial_tau_percentile])
-                self.initial_sigma = self.initial_sigma*self.percentiles[1]
-                self.end_sigma= self.end_sigma*self.percentiles[0]
-                self.sigma_scaled=True
+
         self.P_update(sig = self.initial_sigma)
 
         def random_idx_generator(idx):
