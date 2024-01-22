@@ -47,8 +47,8 @@ class  iGLoMAP():
                  Q = None,
                  use_mapper=True,
                  Z=None,
-                 initial_sigma=1,
-                 end_sigma =0.1,
+                 initial_tau=1,
+                 end_tau =0.1,
                  m_thresh = None,
                  exact_mu = True, rainbow=False, save_vis=False, distance_normalization=True):
 
@@ -85,8 +85,8 @@ class  iGLoMAP():
         self.Q = Q
         self.use_mapper = use_mapper
         self.Z = Z
-        self.initial_sigma = initial_sigma
-        self.end_sigma= end_sigma
+        self.initial_tau = initial_tau
+        self.end_tau= end_tau
         self.exact_mu = exact_mu
         self.rainbow=rainbow
         self.save_Z = save_vis
@@ -148,7 +148,7 @@ class  iGLoMAP():
 
         self.g_dist = g_dist
 
-        self.P_update(sig = self.initial_sigma)
+        self.P_update(sig = self.initial_tau)
 
         def random_idx_generator(idx):
             return random_nb_sparse(self.sparse_P, idx)
@@ -346,8 +346,8 @@ class  iGLoMAP():
             if (epochs>5) and (epochs % 20 == 0):
                 optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q * (0.98**epochs))
                 scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.98)
-                if (self.initial_sigma !=self.end_sigma):
-                    sig = self.initial_sigma-(self.initial_sigma-self.end_sigma)*(float(epochs) / float(self.EPOCHS))**0.5 #m
+                if (self.initial_tau !=self.end_tau):
+                    sig = self.initial_tau-(self.initial_tau-self.end_tau)*(float(epochs) / float(self.EPOCHS))**0.5 #m
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
@@ -399,8 +399,8 @@ class  iGLoMAP():
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
 
             if (epochs>5) and (epochs % 50 == 0):
-                if (self.initial_sigma !=self.end_sigma):
-                    sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS))**0.5
+                if (self.initial_tau !=self.end_tau):
+                    sig = self.initial_tau - (self.initial_tau-self.end_tau) * (float(epochs) / float(self.EPOCHS))**0.5
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
