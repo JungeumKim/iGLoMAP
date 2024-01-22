@@ -141,9 +141,17 @@ class  iGLoMAP():
 
         if self.m_thresh is not None:
             nbrs = NearestNeighbors(n_neighbors=self.n_neighbors *self.m_thresh, metric='precomputed')
-            g_dist[np.isfinite(g_dist)] = 10**10
+            g_dist[np.isinf(g_dist)] = 10**10
+            #set_trace()
             nbrs.fit(g_dist)
-            g_dist,_ = nbrs.kneighbors(g_dist)
+            distances, indices = nbrs.kneighbors(g_dist)
+            new_g_dist = np.full_like(g_dist, np.inf)
+
+            for i in range(g_dist.shape[0]):
+                for j, index in enumerate(indices[i]):
+                    new_g_dist[i, index] = distances[i, j]
+
+            g_dist = new_g_dist
 
         self.g_dist = g_dist
 
