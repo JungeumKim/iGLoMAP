@@ -1,5 +1,5 @@
 from IPython.core.debugger import set_trace
-
+from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
@@ -34,7 +34,7 @@ class  iGLoMAP():
                  end_lr = 0,
                  batch_size = 100,
                  z_dim=2,
-                 EPOCHS = 300,
+                 EPOCHS = None,
                  plot_freq = 20,
                  seed=1234,
                  show=True,
@@ -48,12 +48,10 @@ class  iGLoMAP():
                  use_mapper=True,
                  Z=None,
                  initial_sigma=1,
-                 end_sigma =1,
-                 initial_tau_percentile=None, #75
-                 end_tau_percentile = None, #15
-                 exact_mu = True, rainbow=False, save_vis=False, distance_normalization=False,
-                distance_normalization_percentile=False, linear_tau=True):
-        
+                 end_sigma =0.1,
+                 m_thresh = None,
+                 exact_mu = True, rainbow=False, save_vis=False, distance_normalization=True):
+
 
         ''' ARGUMENTS:
         optimizer: if None, manual gradient steps are used. else (e.g., sgd), then the SGD torch implementation used.
@@ -71,7 +69,10 @@ class  iGLoMAP():
         self.end_lr=end_lr
         self.batch_size = batch_size
         self.z_dim = z_dim
-        self.EPOCHS = EPOCHS
+        if EPOCHS is None:
+            self.EPOCHS = 150 if use_mapper else 300
+        else:
+            self.EPOCHS = EPOCHS
         self.plot_freq = plot_freq
         self.seed = seed
         self.show = show
@@ -86,16 +87,11 @@ class  iGLoMAP():
         self.Z = Z
         self.initial_sigma = initial_sigma
         self.end_sigma= end_sigma
-        self.initial_tau_percentile = initial_tau_percentile
-        self.end_tau_percentile = end_tau_percentile
-        self.sigma_scaled=False
         self.exact_mu = exact_mu
         self.rainbow=rainbow
         self.save_Z = save_vis
         self.distance_normalization = distance_normalization
-        self.distance_normalization_percentile = distance_normalization_percentile
-        self.linear_tau = linear_tau
-       
+        self.m_thresh = m_thresh
         self.Z_list = {}
         print("iGLoMAP initialized")
 
@@ -123,8 +119,8 @@ class  iGLoMAP():
             #    self.shortest_path = np.copy(g_dist)
         else:
             g_dist = precalc_graph
-        
-        if self.distance_normalization: 
+
+        if self.distance_normalization:
             data_1d = g_dist.reshape(-1)
             data_1d = data_1d[np.isfinite(data_1d)]
             #std_deviation = np.std(data_1d)
@@ -132,22 +128,26 @@ class  iGLoMAP():
             norm = np.median(data_1d)
             print(norm)
             g_dist = g_dist/(norm/3)
-        elif self.distance_normalization_percentile:
-            data_1d = g_dist.reshape(-1)
-            data_1d = data_1d[np.isfinite(data_1d)]
-            norm = np.percentile(data_1d, 5)
-            print(norm)
-            g_dist = g_dist/(norm)
+
+
+
+
+        if self.m_thresh is not None:
+            nbrs = NearestNeighbors(n_neighbors=self.n_neighbors *self.m_thresh, metric='precomputed')
+            g_dist[np.isinf(g_dist)] = 10**10
+            #set_trace()
+            nbrs.fit(g_dist)
+            distances, indices = nbrs.kneighbors(g_dist)
+            new_g_dist = np.full_like(g_dist, np.inf)
+
+            for i in range(g_dist.shape[0]):
+                for j, index in enumerate(indices[i]):
+                    new_g_dist[i, index] = distances[i, j]
+
+            g_dist = new_g_dist
 
         self.g_dist = g_dist
-        if self.end_tau_percentile is not None:
-            if not self.sigma_scaled:
-                mat = self.g_dist
-                mat = mat[np.isfinite(mat)&(mat!=0)]
-                self.percentiles = np.percentile(mat.reshape(-1), [self.end_tau_percentile,self.initial_tau_percentile])
-                self.initial_sigma = self.initial_sigma*self.percentiles[1]
-                self.end_sigma= self.end_sigma*self.percentiles[0]
-                self.sigma_scaled=True
+
         self.P_update(sig = self.initial_sigma)
 
         def random_idx_generator(idx):
@@ -172,7 +172,7 @@ class  iGLoMAP():
                 else:
                     Q = nt.Q_2dim(device=self.device, leaky=0.01, z_dim=self.z_dim,
                               dim=X.shape[1], factor=128)
-                    
+
             else:
                 Q = self.Q
             Q = Q.to(self.device)
@@ -268,8 +268,8 @@ class  iGLoMAP():
 
         if axis is not None:
             assert path is None, "when axis is given, we cannot save it."
-            
-        else: 
+
+        else:
             fig = plt.figure(figsize=(8, 8))
             axis = fig.add_subplot(111)
 
@@ -334,18 +334,20 @@ class  iGLoMAP():
 
     def _fit_particle(self):
         self.Z_list.update({0:self.Z.clone().detach().cpu().numpy()})
-
         optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.95)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.98)
+
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS)) #mannual step size.
 
-            if (epochs>5) and (epochs % 50 == 0):
+
+
+
+            if (epochs>5) and (epochs % 20 == 0):
+                optim = torch.optim.Adam(self.Q.parameters(), lr=self.lr_Q * (0.98**epochs))
+                scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.98)
                 if (self.initial_sigma !=self.end_sigma):
-                    if self.linear_tau:
-                        sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS)) 
-                    else:
-                        sig = self.initial_sigma-(self.initial_sigma-self.end_sigma)*(float(epochs) / float(self.EPOCHS))**0.5 #m
+                    sig = self.initial_sigma-(self.initial_sigma-self.end_sigma)*(float(epochs) / float(self.EPOCHS))**0.5 #m
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
@@ -398,10 +400,7 @@ class  iGLoMAP():
 
             if (epochs>5) and (epochs % 50 == 0):
                 if (self.initial_sigma !=self.end_sigma):
-                    if self.linear_tau:
-                        sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS))
-                    else:
-                        sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS))**0.5
+                    sig = self.initial_sigma - (self.initial_sigma-self.end_sigma) * (float(epochs) / float(self.EPOCHS))**0.5
                     self.P_update(sig = sig)
 
             #early = (epochs < self.EPOCHS*0.3)
