@@ -16,6 +16,10 @@ def timer(e_time):
     return f"{int(hours)}h:{int(minutes)}m:{int(seconds)}s"
     #return hours, minutes, seconds
 
+@numba.njit(locals={"norm": numba.float32})
+def normalize_g_dist(g_dist, norm):
+    return g_dist / (norm / 3)
+
 @numba.njit
 def compute_pairwise_distances(z_h):
     # This will compute the Euclidean distance between all pairs of points
@@ -92,9 +96,7 @@ class iGLoMAP:
         self.v_i_dot = v_i_dot
         self.learning_ee = self.ee / vm
 
-    @numba.njit(locals={"norm": numba.float32})
-    def normalize_g_dist(g_dist, norm):
-        return g_dist / (norm / 3)
+
 
     def _fit_prepare(self, X, Y, precalc_graph=None, save_shortest_path=False, shortest_path_comp=True):
         if precalc_graph is None:
