@@ -2,13 +2,19 @@ import numba
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import pdist, squareform
-
+import time
 import matplotlib.pyplot as plt
 from iglo.manifold.neighbor_dataset import Neighbor_dataset
 from iglo.manifold._util_manifold import random_nb_sparse,rand_seed, iglo_graph
 from torch.utils.data import DataLoader
 from iglo.evals.eval_tools import knn_clf_seq
 
+
+def timer(e_time):
+    hours, remainder = divmod(e_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{int(hours)}h:{int(minutes)}m:{int(seconds)}s"
+    #return hours, minutes, seconds
 
 @numba.njit
 def compute_pairwise_distances(z_h):
@@ -184,6 +190,21 @@ class iGLoMAP:
         if self.vis_dir is not None:
             path = f"{self.vis_dir}/z_list.dat"
             np.save(path, self.Z_list)
+
+    def fit_transform(self, X, Y=None,precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
+        begin = time.time()
+        self._fit_prepare(X, Y, precalc_graph, save_shortest_path, shortest_path_comp)
+        end = time.time()
+        self.preparation_time = end - begin
+        print(F"The learning is prepared, time spent:{timer(self.preparation_time)}")
+
+        begin = time.time()
+        self._fit_particle_only()
+        end = time.time()
+        self.fitting_time = end - begin
+        print(F"GLoMAP fitting done, time spent: {timer(self.fitting_time)}")
+
+        return self.Z
 
     def eval(self, Y, nns=[1, 2, 3, 4, 5, 10, 30]):
         Z_np = self.Z
