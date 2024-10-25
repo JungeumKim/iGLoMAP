@@ -82,6 +82,17 @@ def compute_nu(knn_indices, knn_dists, sigmas, dist_scale=1.0, offset=False):
     print("umap_style_local_construction: done")
     return nu
 
+def random_nb_dense(P, idx):
+    n_P_transition = P[idx]
+    m = P.shape[1]
+    sum = n_P_transition.sum()
+    if sum== 0:
+        chosen_col = np.random.choice(m, 1).item()
+    else:
+        n_P_transition /= sum
+        chosen_col = np.random.choice(m, 1, p=n_P_transition).item()
+
+    return chosen_col
 
 def random_nb_sparse(P, idx):
     # number of neighbors = number of non-zero columns of idx row

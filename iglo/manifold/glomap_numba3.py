@@ -84,10 +84,9 @@ class  iGLoMAP():
         P = np.exp(-self.g_dist/sig)
         np.fill_diagonal(P, 0)
         #del g_dist
-        self.sparse_P = sparse.csr_matrix(P)
-        del P
+        self.P = P
 
-        v_i_dot = self.sparse_P.sum(axis=1)
+        v_i_dot = self.P.sum(axis=1)
         v_i_dot = torch.from_numpy(v_i_dot)
         vm = v_i_dot.max()
         v_i_dot /= vm
@@ -125,12 +124,11 @@ class  iGLoMAP():
 
         self.X = torch.from_numpy(X).float()
 
-        self.nu = torch.tensor(self.sparse_P.todense())
 
     def get_loader(self, n):
 
             def random_idx_generator(idx):
-                return random_nb_sparse(self.sparse_P, idx)
+                return random_nb_sparse(self.P, idx)
 
             indices = np.array(range(n)).reshape(-1, 1)
 
@@ -143,9 +141,9 @@ class  iGLoMAP():
                                   shuffle=True,
                                   num_workers=2)
 
-    def fit_transform(self, X, Y=None,precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
+    def fit_transform(self, X, Y=None,precalc_graph=None,  shortest_path_comp=True):
         begin = time.time()
-        self._fit_prepare(X, Y, precalc_graph, save_shortest_path, shortest_path_comp)
+        self._fit_prepare(X, Y, precalc_graph,shortest_path_comp)
         end = time.time()
         self.preparation_time = end - begin
         print(F"The learning is prepared, time spent:{timer(self.preparation_time)}")
@@ -172,7 +170,7 @@ class  iGLoMAP():
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
         if self.exact_mu:
-            neg_step *= np.expand_dims(1-self.sparse_P[idx_h,:][:,idx_h].todense(),2)
+            neg_step *= np.expand_dims(1-self.P[idx_h,:][:,idx_h],2)
         return neg_step
     def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
