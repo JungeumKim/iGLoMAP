@@ -77,7 +77,6 @@ class  iGLoMAP():
         self.rainbow=rainbow
         self.distance_normalization = distance_normalization
         self.show=show
-        self.Z_list = {}
         print("iGLoMAP initialized")
 
     def P_update(self,sig):
@@ -155,7 +154,7 @@ class  iGLoMAP():
         self._fit_particle_only()
         end = time.time()
         self.fitting_time = end - begin
-        print(F"iGLoMAP fitting done, time spent: {timer(self.fitting_time)}")
+        print(F"GLoMAP fitting done, time spent: {timer(self.fitting_time)}")
 
 
         return self.Z
@@ -200,7 +199,6 @@ class  iGLoMAP():
 
 
     def _fit_particle_only(self):
-        self.Z_list.update({0:self.Z.clone()})
 
         for epochs in range(self.EPOCHS):
             alpha = self.initial_lr - (self.initial_lr-self.end_lr) * (float(epochs) / float(self.EPOCHS))#mannual step size.
