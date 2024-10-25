@@ -5,7 +5,7 @@ import numpy as np
 from scipy import sparse
 import torch
 from iglo.manifold.neighbor_dataset import Neighbor_dataset
-from iglo.manifold._util_manifold import torch_pairwise_distances,random_nb_sparse,rand_seed, iglo_graph
+from iglo.manifold._util_manifold import torch_pairwise_distances,random_nb_dense,rand_seed, iglo_graph
 from torch.utils.data import DataLoader
 import time
 
@@ -128,7 +128,7 @@ class  iGLoMAP():
     def get_loader(self, n):
 
             def random_idx_generator(idx):
-                return random_nb_sparse(self.P, idx)
+                return random_nb_dense(self.P, idx)
 
             indices = np.array(range(n)).reshape(-1, 1)
 

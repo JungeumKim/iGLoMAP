@@ -91,7 +91,6 @@ def random_nb_dense(P, idx):
     else:
         n_P_transition /= sum
         chosen_col = np.random.choice(m, 1, p=n_P_transition).item()
-
     return chosen_col
 
 def random_nb_sparse(P, idx):
