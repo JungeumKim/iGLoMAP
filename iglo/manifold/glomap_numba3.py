@@ -37,8 +37,6 @@ class  iGLoMAP():
                  EPOCHS = None,
                  plot_freq = 20,
                  seed=1234,
-                 vis_dir = None,
-                 vis_s = 1,
                  clamp=4,
                  device="cuda",
                  lr_Q = 0.01,
@@ -73,8 +71,6 @@ class  iGLoMAP():
             self.EPOCHS = EPOCHS
         self.plot_freq = plot_freq
         self.seed = seed
-        self.vis_dir = vis_dir
-        self.vis_s = vis_s
         self.clamp= clamp
         self.device = device
         self.lr_Q = lr_Q
@@ -251,8 +247,45 @@ class  iGLoMAP():
                 z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
                 self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h.float(),z_t.float()
 
-                
+            if self.show:
+                if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
+                    self.vis(show=self.show,title=F"epoch{epochs+1}/{self.EPOCHS}",
+                        path=None,s=self.vis_s, rainbow=self.rainbow,epochs = epochs+1)
 
-        if self.vis_dir is not None:
-            path = join(self.vis_dir, F"z_list.dat")
-            torch.save(self.Z_list, path)
+
+    def vis(self,Y=None,axis=None, s=1, show=False,title=None,path=None,rainbow=False, close=True, epochs = None):
+
+        if Y is not None:
+            color = Y
+        elif self.Y is not None:
+            color = self.Y
+        else:
+            color=None
+
+        if axis is not None:
+            assert path is None, "when axis is given, we cannot save it."
+
+        else:
+            fig = plt.figure(figsize=(8, 8))
+            axis = fig.add_subplot(111)
+
+        Z0 = self.Z.numpy()
+
+        if color is None:
+            axis.scatter(Z0[:, 0], Z0[:, 1], s=s)
+        else:
+            if rainbow:
+                axis.scatter(Z0[:, 0], Z0[:, 1], c=color, cmap=plt.cm.gist_rainbow, s=s)
+            else:
+                axis.scatter(Z0[:, 0], Z0[:, 1], c=color, cmap=plt.cm.Spectral, s=s)
+        axis.set_aspect('equal')
+        axis.set_title(title)
+        if path is not None:
+            fig.savefig(path)
+        if show:
+            plt.show()
+        if close:
+            plt.close()
+
+
+
