@@ -1,19 +1,27 @@
 from IPython.core.debugger import set_trace
-from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import sparse
 import torch
 from iglo.manifold.neighbor_dataset import Neighbor_dataset
-from iglo.manifold._util_manifold import torch_pairwise_distances,random_nb_dense,rand_seed, iglo_graph
+from iglo.manifold._util_manifold_numba import np_pairwise_distances,random_nb_dense,rand_seed, iglo_graph
 from torch.utils.data import DataLoader
 import time
+from numba import njit
 
 def timer(e_time):
     hours, remainder = divmod(e_time, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{int(hours)}h:{int(minutes)}m:{int(seconds)}s"
     #return hours, minutes, seconds
+
+@njit
+def normalize(g_dist):
+    data_1d = g_dist.reshape(-1)
+    data_1d = data_1d[np.isfinite(data_1d)]
+    norm = np.median(data_1d)
+    print(norm)
+    g_dist = g_dist/(norm/3)
+    return g_dist
 
 class  iGLoMAP():
     def __init__(self,
@@ -79,6 +87,7 @@ class  iGLoMAP():
         self.show=show
         print("iGLoMAP initialized")
 
+    @njit
     def P_update(self,sig):
 
         #g_dist[g_dist == 0] = float("inf")
@@ -88,13 +97,14 @@ class  iGLoMAP():
         self.P = P
 
         v_i_dot = self.P.sum(axis=1)
-        v_i_dot = torch.from_numpy(v_i_dot)
+        #v_i_dot = torch.from_numpy(v_i_dot)
         vm = v_i_dot.max()
         v_i_dot /= vm
         self.v_i_dot = v_i_dot
         self.learning_ee = self.ee/vm
 
     def _fit_prepare(self, X,Y, precalc_graph=None, shortest_path_comp=True):
+        rand_seed(self.seed)
 
         if precalc_graph is None:
             g_dist = iglo_graph(X, self.n_neighbors, shortest_path_comp = shortest_path_comp)
@@ -104,23 +114,21 @@ class  iGLoMAP():
             g_dist = precalc_graph
 
         if self.distance_normalization:
-            data_1d = g_dist.reshape(-1)
-            data_1d = data_1d[np.isfinite(data_1d)]
-            #std_deviation = np.std(data_1d)
-            #g_dist /= std_deviation
-            norm = np.median(data_1d)
-            print(norm)
-            g_dist = g_dist/(norm/3)
+            g_dist = normalize(g_dist)
+
+
 
         self.g_dist = g_dist
         self.P_update(sig = self.initial_tau)
+
         self.g_loader = self.get_loader(n=X.shape[0])
-        rand_seed(self.seed)
+
 
         if self.Z is None:
-            self.Z = torch.randn(size=(X.shape[0],2), device = "cpu").float()
+            self.Z = np.random.randn(X.shape[0], 2).astype(np.float32) #torch.randn(size=(X.shape[0],2), device = "cpu").float()
         else:
             assert self.Z.shape[0] == X.shape[0]
+
         self.Y = Y
 
         self.X = torch.from_numpy(X).float()
@@ -161,18 +169,19 @@ class  iGLoMAP():
 
 
     def manual_single_negative_grad(self,z_h,a,b,idx_h):
-        z_dist_square = torch_pairwise_distances(z_h, dim=2).pow(2)
+        z_dist_square = np_pairwise_distances(z_h, dim=2).pow(2)
         deno = (0.001 + z_dist_square) * (a * z_dist_square.pow(b) + 1)
 
         grad_coeff = 2.0 * b
         grad_coeff = grad_coeff / deno
         # important : torch.pairwise_distances gives other - z_h. Therefore, should multiply by -1.
-        diff = -torch_pairwise_distances(z_h, dim=2, reduction=None)
+        diff = -np_pairwise_distances(z_h, dim=2, reduction=None)
         neg_step = grad_coeff.unsqueeze(2) * diff
         neg_step = neg_step.clamp(-self.clamp, self.clamp)
         if self.exact_mu:
             neg_step *= np.expand_dims(1-self.P[idx_h,:][:,idx_h],2)
         return neg_step
+
     def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
         neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b, idx_h)
@@ -185,7 +194,8 @@ class  iGLoMAP():
         grad_coeff = -2.0 * self.a * self.b * znb_dist_square.pow(self.b - 1.0)
         grad_coeff /= self.a * znb_dist_square.pow(self.b) + 1.0
 
-        grad_coeff *= self.v_i_dot[idx_h].clone().detach().view(-1)
+        set_trace() #check if view(-1) is unnecessary.
+        grad_coeff *= self.v_i_dot[idx_h] #.clone().detach().view(-1)
 
         # pos_step = grad_coeff.view(-1,1) * (z_h-z_t)
         pos_step = grad_coeff.view(-1, 1) * (updated_z_h - z_t)
@@ -210,10 +220,10 @@ class  iGLoMAP():
 
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
-                idx_h_dum, idx_h, idx_t_dum, idx_t = pack
+                _, idx_h, _, idx_t = pack
                 z_h, z_t = self.Z[idx_h.long()], self.Z[idx_t.long()]
                 z_h, z_t = self.manual_single_update(z_h, z_t, idx_h,alpha)#,early)
-                self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h.float(),z_t.float()
+                self.Z[idx_h.long()], self.Z[idx_t.long()] = z_h,z_t#.astype(np.float32)
 
             if self.show:
                 if (((epochs+1) % self.plot_freq == 0) or (epochs + 1 == self.EPOCHS)):
@@ -237,7 +247,7 @@ class  iGLoMAP():
             fig = plt.figure(figsize=(8, 8))
             axis = fig.add_subplot(111)
 
-        Z0 = self.Z.numpy()
+        Z0 = self.Z
 
         if color is None:
             axis.scatter(Z0[:, 0], Z0[:, 1], s=s)
