@@ -7,14 +7,6 @@ import torch
 from iglo.manifold.neighbor_dataset import Neighbor_dataset
 from iglo.manifold._util_manifold import torch_pairwise_distances,random_nb_sparse,rand_seed, iglo_graph
 from torch.utils.data import DataLoader
-from iglo._data import get_precalc_graph
-from iglo.evals.eval_tools import knn_clf_seq
-from scipy.spatial.distance import pdist, squareform
-# model: to initialize
-import iglo._networks.network_conv_grey as ncg
-import iglo._networks.network_toy as nt
-from os.path import join
-import copy
 import time
 
 def timer(e_time):
@@ -30,6 +22,7 @@ class  iGLoMAP():
                  ee = None,
                  a = 1.57694,
                  b = 0.8951,
+                 show=True,
                  initial_lr = 1,
                  end_lr = 0,
                  batch_size = 100,
@@ -45,7 +38,6 @@ class  iGLoMAP():
                  Z=None,
                  initial_tau=1,
                  end_tau =0.1,
-                 m_thresh = None,
                  exact_mu = True, rainbow=False, distance_normalization=True):
 
 
@@ -82,7 +74,7 @@ class  iGLoMAP():
         self.exact_mu = exact_mu
         self.rainbow=rainbow
         self.distance_normalization = distance_normalization
-        self.m_thresh = m_thresh
+        self.show=show
         self.Z_list = {}
         print("iGLoMAP initialized")
 
@@ -102,7 +94,7 @@ class  iGLoMAP():
         self.v_i_dot = v_i_dot
         self.learning_ee = self.ee/vm
 
-    def _fit_prepare(self, X,Y, precalc_graph=None, save_shortest_path = False, shortest_path_comp=True):
+    def _fit_prepare(self, X,Y, precalc_graph=None, shortest_path_comp=True):
 
         if precalc_graph is None:
             g_dist = iglo_graph(X, self.n_neighbors, shortest_path_comp = shortest_path_comp)
@@ -120,32 +112,10 @@ class  iGLoMAP():
             print(norm)
             g_dist = g_dist/(norm/3)
 
-
-
-
-        if self.m_thresh is not None:
-            nbrs = NearestNeighbors(n_neighbors=self.n_neighbors *self.m_thresh, metric='precomputed')
-            g_dist[np.isinf(g_dist)] = 10**10
-            #set_trace()
-            nbrs.fit(g_dist)
-            distances, indices = nbrs.kneighbors(g_dist)
-            new_g_dist = np.full_like(g_dist, np.inf)
-
-            for i in range(g_dist.shape[0]):
-                for j, index in enumerate(indices[i]):
-                    new_g_dist[i, index] = distances[i, j]
-
-            g_dist = new_g_dist
-
         self.g_dist = g_dist
-
         self.P_update(sig = self.initial_tau)
         self.g_loader = self.get_loader(n=X.shape[0])
-
-
-
         rand_seed(self.seed)
-
 
         if self.Z is None:
             self.Z = torch.randn(size=(X.shape[0],2), device = "cpu").float()
