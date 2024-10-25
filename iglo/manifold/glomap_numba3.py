@@ -31,6 +31,7 @@ class  iGLoMAP():
                  plot_freq = 20,
                  seed=1234,
                  clamp=4,
+                 vis_s = 1,
                  device="cuda",
                  lr_Q = 0.01,
                  conv=False,
@@ -63,6 +64,7 @@ class  iGLoMAP():
             self.EPOCHS = EPOCHS
         self.plot_freq = plot_freq
         self.seed = seed
+        self.vis_s = vis_s
         self.clamp= clamp
         self.device = device
         self.lr_Q = lr_Q
