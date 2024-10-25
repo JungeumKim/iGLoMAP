@@ -15,6 +15,15 @@ def timer(e_time):
     #return hours, minutes, seconds
 
 @njit
+def P_update(g_dist,sig):
+    P = np.exp(-g_dist/sig)
+    np.fill_diagonal(P, 0)
+    v_i_dot = P.sum(axis=1)
+    vm = v_i_dot.max()
+    v_i_dot /= vm
+    return P, v_i_dot,vm
+
+@njit
 def normalize(g_dist):
     data_1d = g_dist.reshape(-1)
     data_1d = data_1d[np.isfinite(data_1d)]
@@ -87,14 +96,6 @@ class  iGLoMAP():
         self.show=show
         print("iGLoMAP initialized")
 
-    @njit
-    def P_update(g_dist,sig):
-        P = np.exp(-g_dist/sig)
-        np.fill_diagonal(P, 0)
-        v_i_dot = P.sum(axis=1)
-        vm = v_i_dot.max()
-        v_i_dot /= vm
-        return P, v_i_dot,vm
 
 
     def _fit_prepare(self, X,Y, precalc_graph=None, shortest_path_comp=True):
@@ -113,7 +114,8 @@ class  iGLoMAP():
 
 
         self.g_dist = g_dist
-        self.P , self.v_i_dot, vm = self.P_update(self.g_dist, sig = self.initial_ta)
+        self.P , self.v_i_dot, vm = P_update(self.g_dist, sig = self.initial_tau)
+        self.learning_ee = self.ee/vm
 
         self.g_loader = self.get_loader(n=X.shape[0])
 
@@ -163,15 +165,15 @@ class  iGLoMAP():
 
 
     def manual_single_negative_grad(self,z_h,a,b,idx_h):
-        z_dist_square = np_pairwise_distances(z_h, dim=2).pow(2)
-        deno = (0.001 + z_dist_square) * (a * z_dist_square.pow(b) + 1)
+        z_dist_square = np_pairwise_distances(z_h, dim=2)**(2)
+        deno = (0.001 + z_dist_square) * (a * z_dist_square**(b) + 1)
 
         grad_coeff = 2.0 * b
         grad_coeff = grad_coeff / deno
         # important : torch.pairwise_distances gives other - z_h. Therefore, should multiply by -1.
         diff = -np_pairwise_distances(z_h, dim=2, reduction=None)
-        neg_step = grad_coeff.unsqueeze(2) * diff
-        neg_step = neg_step.clamp(-self.clamp, self.clamp)
+        neg_step = np.expand_dims(grad_coeff, axis=2) * diff
+        neg_step = np.clip(neg_step, -self.clamp, self.clamp) 
         if self.exact_mu:
             neg_step *= np.expand_dims(1-self.P[idx_h,:][:,idx_h],2)
         return neg_step
@@ -179,21 +181,21 @@ class  iGLoMAP():
     def manual_single_update(self, z_h, z_t, idx_h,alpha):
         ## negative step
         neg_grad = self.manual_single_negative_grad(z_h,self.a, self.b, idx_h)
-        neg_step = neg_grad.sum(dim=1)
+        neg_step = neg_grad.sum(axis=1)
 
         updated_z_h = z_h + alpha * self.learning_ee * neg_step
 
         ## positive step
-        znb_dist_square = (updated_z_h - z_t).norm(dim=1).pow(2)
-        grad_coeff = -2.0 * self.a * self.b * znb_dist_square.pow(self.b - 1.0)
-        grad_coeff /= self.a * znb_dist_square.pow(self.b) + 1.0
+        znb_dist_square = np.sum((updated_z_h - z_t) ** 2, axis=1) #(updated_z_h - z_t).norm(dim=1)**(2)
+        grad_coeff = -2.0 * self.a * self.b * znb_dist_square**(self.b - 1.0)
+        grad_coeff /= self.a * znb_dist_square**(self.b) + 1.0
 
-        set_trace() #check if view(-1) is unnecessary.
+        #set_trace() #check if view(-1) is unnecessary.
         grad_coeff *= self.v_i_dot[idx_h] #.clone().detach().view(-1)
 
         # pos_step = grad_coeff.view(-1,1) * (z_h-z_t)
-        pos_step = grad_coeff.view(-1, 1) * (updated_z_h - z_t)
-        pos_step = pos_step.clamp(-self.clamp, self.clamp)
+        pos_step = grad_coeff.reshape(-1, 1) * (updated_z_h - z_t)
+        pos_step = np.clip(pos_step, -self.clamp, self.clamp) #pos_step.clamp(-self.clamp, self.clamp)
         tail_pos = -pos_step
 
         next_z_h = updated_z_h + alpha * pos_step
@@ -210,7 +212,7 @@ class  iGLoMAP():
             if (epochs>5) and (epochs % 50 == 0):
                 if (self.initial_tau !=self.end_tau):
                     sig = self.initial_tau - (self.initial_tau-self.end_tau) * (float(epochs) / float(self.EPOCHS))**0.5
-                    self.P , self.v_i_dot, vm = self.P_update(self.g_dist, sig = sig)
+                    self.P , self.v_i_dot, vm = P_update(self.g_dist, sig = sig)
                     self.learning_ee = self.ee/vm
 
             #early = (epochs < self.EPOCHS*0.3)
