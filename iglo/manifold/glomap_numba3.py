@@ -88,20 +88,14 @@ class  iGLoMAP():
         print("iGLoMAP initialized")
 
     @njit
-    def P_update(self,sig):
-
-        #g_dist[g_dist == 0] = float("inf")
-        P = np.exp(-self.g_dist/sig)
+    def P_update(g_dist,sig):
+        P = np.exp(-g_dist/sig)
         np.fill_diagonal(P, 0)
-        #del g_dist
-        self.P = P
-
-        v_i_dot = self.P.sum(axis=1)
-        #v_i_dot = torch.from_numpy(v_i_dot)
+        v_i_dot = P.sum(axis=1)
         vm = v_i_dot.max()
         v_i_dot /= vm
-        self.v_i_dot = v_i_dot
-        self.learning_ee = self.ee/vm
+        return P, v_i_dot,vm
+
 
     def _fit_prepare(self, X,Y, precalc_graph=None, shortest_path_comp=True):
         rand_seed(self.seed)
@@ -119,7 +113,7 @@ class  iGLoMAP():
 
 
         self.g_dist = g_dist
-        self.P_update(sig = self.initial_tau)
+        self.P , self.v_i_dot, vm = self.P_update(self.g_dist, sig = self.initial_ta)
 
         self.g_loader = self.get_loader(n=X.shape[0])
 
@@ -216,7 +210,8 @@ class  iGLoMAP():
             if (epochs>5) and (epochs % 50 == 0):
                 if (self.initial_tau !=self.end_tau):
                     sig = self.initial_tau - (self.initial_tau-self.end_tau) * (float(epochs) / float(self.EPOCHS))**0.5
-                    self.P_update(sig = sig)
+                    self.P , self.v_i_dot, vm = self.P_update(self.g_dist, sig = sig)
+                    self.learning_ee = self.ee/vm
 
             #early = (epochs < self.EPOCHS*0.3)
             for ii, pack in enumerate(self.g_loader):
