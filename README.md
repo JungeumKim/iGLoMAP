@@ -14,7 +14,7 @@ The paper introduces two algorithms:
 
 ## Visual Results
 
-### The Unique Gradual Transfer Behavior
+### The unique gradual progression from global shape to local detail
 
 The key innovation is the **progression from global to local structure** - notice how UMAP remains scattered while GLoMAP smoothly transitions:
 
